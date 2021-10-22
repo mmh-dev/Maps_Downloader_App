@@ -5,6 +5,11 @@ import android.os.Bundle
 import android.util.Log
 import com.mmh.maps_downloader_app.R
 import com.mmh.maps_downloader_app.databinding.ActivityMainBinding
+import com.mmh.maps_downloader_app.entity.Region
+import org.w3c.dom.Element
+import org.w3c.dom.Node
+import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
 import java.io.File
 import java.io.IOException
 import java.lang.Exception
@@ -20,28 +25,44 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setProgressBar()
-        parseMapsData()
-
         binding.apply {
             setSupportActionBar(toolbarMain)
             title = getString(R.string.download_maps)
         }
+
+        setProgressBar()
+        parseMapsData()
     }
 
     private fun parseMapsData() {
+        val countries = mutableListOf<String>()
+        val regions = mutableListOf<String>()
+        var attCount = 0
         try {
-            val inputStream = assets.open("regions.xml")
-            val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(inputStream)
-            val regList = doc.getElementsByTagName("region")
-            for (i in 0 until regList.length){
+            val xmlData = assets.open("regions.xml")
+            val parser = XmlPullParserFactory.newInstance().newPullParser()
+            parser.setInput(xmlData, null)
 
+            while (parser.eventType != XmlPullParser.END_DOCUMENT) {
+                if (parser.eventType == XmlPullParser.START_TAG && parser.name == "region") {
+                    attCount = parser.attributeCount
+                     for (i in 0 until attCount){
+                         if (parser.getAttributeName(i) == "lang"){   //находим страну
+                             for (j in 0 until attCount){
+                                 if (parser.getAttributeName(j) == "name"){
+
+                                 }
+                             }
+
+                         }
+                     }
+                }
+                parser.next()
             }
-
-        } catch (e: Exception){
+        } catch (e: Exception) {
             e.printStackTrace()
         }
-
+        Log.i("count", countries.size.toString())
     }
 
     private fun setProgressBar() {

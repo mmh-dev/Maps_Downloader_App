@@ -17,16 +17,20 @@ class MapsAdapter : ListAdapter<Region, MapsAdapter.MapsViewHolder>(DiffCallBack
     }
 
     override fun onBindViewHolder(holder: MapsViewHolder, position: Int) {
-        val currentMap = getItem(position)
-        holder.bind(currentMap)
+        val currentRegion = getItem(position)
+        holder.bind(currentRegion)
     }
 
     class MapsViewHolder(private val binding: MapItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(map: Region) {
+        fun bind(region: Region) {
             binding.apply {
-                locationName.text = map.name
+                if (region.hasRegions){
+                    locationName.text = region.country
+                } else{
+                    locationName.text = region.region
+                }
             }
         }
     }
