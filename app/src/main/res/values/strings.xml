@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Maps_Downloader_App</string>
+    <string name="device_memory">Device memory</string>
+    <string name="free">Free</string>
+    <string name="gb">Gb</string>
+    <string name="europe">Europe</string>
+    <string name="download_maps">Download Maps</string>
+</resources>
