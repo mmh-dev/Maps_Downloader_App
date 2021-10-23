@@ -5,4 +5,5 @@
     <string name="gb">Gb</string>
     <string name="europe">Europe</string>
     <string name="download_maps">Download Maps</string>
+    <string name="permissions_required">Permissions required for downloading and saving maps</string>
 </resources>
