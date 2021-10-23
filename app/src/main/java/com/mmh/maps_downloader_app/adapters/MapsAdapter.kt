@@ -16,12 +16,22 @@ import androidx.recyclerview.widget.RecyclerView
 import com.mmh.maps_downloader_app.databinding.MapItemBinding
 import com.mmh.maps_downloader_app.entity.Region
 
-class MapsAdapter : ListAdapter<Region, MapsAdapter.MapsViewHolder>(DiffCallBack()) {
+class MapsAdapter(
+    var listener: MapClickListener
+) : ListAdapter<Region, MapsAdapter.MapsViewHolder>(DiffCallBack()) {
+
+    interface MapClickListener {
+        fun onItemClick(position: Int)
+    }
+
+    public override fun getItem(position: Int): Region {
+        return super.getItem(position)
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MapsViewHolder {
 
         val binding = MapItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return MapsViewHolder(binding)
+        return MapsViewHolder(binding, listener)
     }
 
     override fun onBindViewHolder(holder: MapsViewHolder, position: Int) {
@@ -29,20 +39,17 @@ class MapsAdapter : ListAdapter<Region, MapsAdapter.MapsViewHolder>(DiffCallBack
         holder.bind(currentRegion)
     }
 
-    class MapsViewHolder(private val binding: MapItemBinding) :
+    class MapsViewHolder(val binding: MapItemBinding, var listener: MapClickListener) :
         RecyclerView.ViewHolder(binding.root) {
+
+        init {
+            binding.downloadBtn.setOnClickListener {
+                listener.onItemClick(adapterPosition)
+            }
+        }
 
         fun bind(region: Region) {
             binding.apply {
-//                if (region.region == "Europe") {
-//                    mapIcon.visibility = View.GONE
-//                    downloadBtn.visibility = View.GONE
-//                    divider.visibility = View.GONE
-//                    locationName.typeface = Typeface.DEFAULT_BOLD
-//                    (locationName.layoutParams as ConstraintLayout.LayoutParams).apply {
-//                        marginStart = 16.dpToPixels(mapIcon.context)
-//                    }
-//                }
                 if (region.hasRegions) {
                     locationName.text = region.country
                 } else {
