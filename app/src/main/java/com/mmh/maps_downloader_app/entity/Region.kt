@@ -5,8 +5,7 @@ data class Region(
     var region: String? = null,
     var isDownloadable: Boolean = true,
     var hasRegions: Boolean = true,
-    var regions: List<Region>? = null,
-    private var _link: String? = null
+    var regions: List<Region>? = null
 ) {
 
     var country: String? = _country

@@ -49,12 +49,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun parseMapsData(): List<Region> {
         var countries = mutableListOf<Region>()
-        val europe = Region()
-        europe.country = "europe"
-        countries.add(europe)
         var regions = mutableListOf<Region>()
-        var region = Region()
-        var attCount: Int
         try {
             val xmlData = assets.open("regions.xml")
             val parser = XmlPullParserFactory.newInstance().newPullParser()
@@ -62,7 +57,7 @@ class MainActivity : AppCompatActivity() {
 
             while (parser.eventType != XmlPullParser.END_DOCUMENT) {
                 if (parser.eventType == XmlPullParser.START_TAG && parser.name == "region") {
-                    attCount = parser.attributeCount
+                    var attCount = parser.attributeCount
                     for (i in 0 until attCount) {
                         if (parser.getAttributeName(i) == "lang") {   //находим страну
                             for (j in 0 until attCount) {
@@ -72,7 +67,6 @@ class MainActivity : AppCompatActivity() {
                                     countries.add(country)
                                 }
                             }
-
                         }
                     }
                 }

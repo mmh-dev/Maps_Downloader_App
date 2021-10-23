@@ -34,16 +34,15 @@ class MapsAdapter : ListAdapter<Region, MapsAdapter.MapsViewHolder>(DiffCallBack
 
         fun bind(region: Region) {
             binding.apply {
-                if (region.country == "Europe") {
-                    mapIcon.visibility = View.GONE
-                    downloadBtn.visibility = View.GONE
-                    divider.visibility = View.GONE
-
-                    locationName.typeface = Typeface.DEFAULT_BOLD
-                    (locationName.layoutParams as ConstraintLayout.LayoutParams).apply {
-                        marginStart = 16.dpToPixels(mapIcon.context)
-                    }
-                }
+//                if (region.region == "Europe") {
+//                    mapIcon.visibility = View.GONE
+//                    downloadBtn.visibility = View.GONE
+//                    divider.visibility = View.GONE
+//                    locationName.typeface = Typeface.DEFAULT_BOLD
+//                    (locationName.layoutParams as ConstraintLayout.LayoutParams).apply {
+//                        marginStart = 16.dpToPixels(mapIcon.context)
+//                    }
+//                }
                 if (region.hasRegions) {
                     locationName.text = region.country
                 } else {
