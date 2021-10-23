@@ -5,12 +5,13 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.listener.multi.BaseMultiplePermissionsListener
 import com.mmh.maps_downloader_app.R
+import com.mmh.maps_downloader_app.adapters.HeaderAdapter
 import com.mmh.maps_downloader_app.adapters.MapsAdapter
 import com.mmh.maps_downloader_app.databinding.ActivityMainBinding
 import com.mmh.maps_downloader_app.entity.Region
@@ -23,6 +24,7 @@ import java.util.*
 
 class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
 
+    private val headerAdapter = HeaderAdapter()
     private var mapAdapter = MapsAdapter(this)
     private lateinit var binding: ActivityMainBinding
 
@@ -42,9 +44,10 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
     }
 
     private fun fillRecyclerView(countries: List<Region>) {
+        val concatAdapter = ConcatAdapter(headerAdapter, mapAdapter)
         binding.apply {
             recyclerView.apply {
-                adapter = mapAdapter
+                adapter = concatAdapter
                 layoutManager = LinearLayoutManager(this@MainActivity)
             }
         }
