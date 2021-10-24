@@ -1,15 +1,8 @@
 package com.mmh.maps_downloader_app.adapters
 
 import android.annotation.SuppressLint
-import android.app.Activity
-import android.content.Context
-import android.graphics.Typeface
-import android.opengl.Visibility
-import android.util.TypedValue
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -42,7 +35,7 @@ class MapsAdapter (var listener: MapClickListener) : ListAdapter<Region, MapsAda
 
         init {
             binding.downloadBtn.setOnClickListener {
-                listener.onItemClick(adapterPosition)
+                listener.onItemClick(absoluteAdapterPosition)
             }
         }
 

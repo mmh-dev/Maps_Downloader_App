@@ -20,7 +20,14 @@ import org.xmlpull.v1.XmlPullParserFactory
 import java.io.File
 import java.io.IOException
 import java.lang.Exception
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.*
+import android.os.Environment
+import java.io.FileOutputStream
+import java.io.InputStream
+import java.net.MalformedURLException
+
 
 class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
 
@@ -105,10 +112,40 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
     private fun Double.round(decimals: Int = 2): Double =
         "%.${decimals}f".format(Locale.US, this).toDouble()
 
-
-
-    private fun downloadMaps(link: String) {
+    private fun downloadMaps(link: String, fileName: String) {
         Toast.makeText(this, link, Toast.LENGTH_SHORT).show()
+        try {
+            val url = URL(link)
+            val urlConnection: HttpURLConnection = url.openConnection() as HttpURLConnection
+            urlConnection.requestMethod = "GET"
+            urlConnection.doOutput = true
+            urlConnection.connect()
+            val sdcard = Environment.getExternalStorageDirectory()
+            val file = File(sdcard, fileName)
+            val fileOutput = FileOutputStream(file)
+            val inputStream: InputStream = urlConnection.inputStream
+            val totalSize = urlConnection.contentLength
+            var downloadedSize = 0
+            val buffer = ByteArray(1024)
+            var bufferLength = 0
+            while (inputStream.read(buffer) > 0) {
+                bufferLength = inputStream.read(buffer)
+                fileOutput.write(buffer, 0, bufferLength);
+                downloadedSize += bufferLength;
+                updateProgress(downloadedSize, totalSize);
+            }
+            fileOutput.close()
+        } catch (e: MalformedURLException) {
+            e.printStackTrace()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun updateProgress(downloadedSize: Int, totalSize: Int) {
+
+        Toast.makeText(this, downloadedSize.toString(), Toast.LENGTH_SHORT).show()
+
     }
 
     private fun askPermission(vararg permissions: String, callback: (Boolean) -> Unit) {
@@ -130,12 +167,14 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
             if (granted) {
                 try {
                     val link = mapAdapter.getItem(position).link
-                    downloadMaps(link)
+                    val fileName = mapAdapter.getItem(position).country + "_europe_2.obf.zip"
+                    downloadMaps(link, fileName)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
-            } else{
-                Toast.makeText(this, getString(R.string.permissions_required), Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, getString(R.string.permissions_required), Toast.LENGTH_SHORT)
+                    .show()
             }
         }
     }
