@@ -3,6 +3,8 @@ package com.mmh.maps_downloader_app.ui
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.mmh.maps_downloader_app.adapters.MapsAdapter
 import com.mmh.maps_downloader_app.databinding.ActivityRegionsBinding
 import com.mmh.maps_downloader_app.entity.Region
@@ -22,6 +24,11 @@ class RegionsActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
             setSupportActionBar(toolbarRegions)
             title = intent.getStringExtra("title")
             toolbarRegions.setTitleTextColor(android.graphics.Color.WHITE)
+
+            val regionsJson = intent.getStringExtra("regions")
+            val type = object : TypeToken<List<Region>?>() {}.type
+            regions = Gson().fromJson(regionsJson, type)
+
             back.setOnClickListener {
                 finish()
             }
@@ -37,7 +44,7 @@ class RegionsActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
                 layoutManager = LinearLayoutManager(this@RegionsActivity)
             }
         }
-        mapAdapter.submitList(regions.sortedBy { it.country })
+        mapAdapter.submitList(regions.sortedBy { it.region })
     }
 
     override fun onItemClick(position: Int) {
@@ -55,7 +62,6 @@ class RegionsActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
     }
 
     private fun downloadMaps(link: String, fileName: String) {
-
 
     }
 }
