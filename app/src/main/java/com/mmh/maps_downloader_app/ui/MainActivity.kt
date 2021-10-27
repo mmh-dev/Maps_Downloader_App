@@ -3,7 +3,6 @@ package com.mmh.maps_downloader_app.ui
 import android.Manifest
 import android.content.Intent
 import android.os.Bundle
-import android.os.Environment
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.ConcatAdapter
@@ -19,14 +18,8 @@ import com.mmh.maps_downloader_app.adapters.HeaderAdapter
 import com.mmh.maps_downloader_app.adapters.MapsAdapter
 import com.mmh.maps_downloader_app.databinding.ActivityMainBinding
 import com.mmh.maps_downloader_app.entity.Region
-import com.mmh.maps_downloader_app.services.MyWorkManager
+import com.mmh.maps_downloader_app.utils.MyWorkManager
 import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
-import java.io.InputStream
-import java.net.HttpURLConnection
-import java.net.MalformedURLException
-import java.net.URL
 import java.util.*
 
 
@@ -91,36 +84,6 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
     private fun Double.round(decimals: Int = 2): Double =
         "%.${decimals}f".format(Locale.US, this).toDouble()
 
-    private fun downloadMaps(link: String, fileName: String) {
-        Toast.makeText(this, link, Toast.LENGTH_SHORT).show()
-        try {
-            val url = URL(link)
-            val urlConnection: HttpURLConnection = url.openConnection() as HttpURLConnection
-            urlConnection.requestMethod = "GET"
-            urlConnection.doOutput = true
-            urlConnection.connect()
-            val sdcard = Environment.getExternalStorageDirectory()
-            val file = File(sdcard, fileName)
-            val fileOutput = FileOutputStream(file)
-            val inputStream: InputStream = urlConnection.inputStream
-            val totalSize = urlConnection.contentLength
-            var downloadedSize = 0
-            val buffer = ByteArray(1024)
-            var bufferLength = 0
-            while (inputStream.read(buffer) > 0) {
-                bufferLength = inputStream.read(buffer)
-                fileOutput.write(buffer, 0, bufferLength);
-                downloadedSize += bufferLength;
-                updateProgress(downloadedSize, totalSize);
-            }
-            fileOutput.close()
-        } catch (e: MalformedURLException) {
-            e.printStackTrace()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
     private fun updateProgress(downloadedSize: Int, totalSize: Int) {
 
         Toast.makeText(this, downloadedSize.toString(), Toast.LENGTH_SHORT).show()
@@ -145,13 +108,15 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
         ) { granted ->
             if (granted) {
                 try {
-                    if (!mapAdapter.getItem(position).hasRegions) {
-                        val link = mapAdapter.getItem(position).link
-                        val fileName = mapAdapter.getItem(position).country + "_europe_2.obf.zip"
-                        downloadMaps(link, fileName)
-                    } else {
-                        onItemClick(position)
-                    }
+//                    if (!mapAdapter.getItem(position).hasRegions) {
+//                        val workManager = WorkManager.getInstance(this)
+//                        val jsonMap = Gson().toJson(mapAdapter.getItem(position))
+//                        val data = Data.Builder().putString("tag", jsonMap).build()
+//                        val parseWorker = OneTimeWorkRequestBuilder<MyWorkManager>().setInputData(data).build()
+//                        workManager.enqueue(parseWorker)
+//                    } else {
+//                        onItemClick(position)
+//                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -163,7 +128,7 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
     }
 
     override fun onItemClick(position: Int) {
-        val regions: List<Region>? = mapAdapter.getItem(position).regions
+        val regions = mapAdapter.getItem(position).regions
         val regionsJson = Gson().toJson(regions)
         val intent = Intent(this, RegionsActivity::class.java)
         intent.putExtra("title", mapAdapter.getItem(position).country)

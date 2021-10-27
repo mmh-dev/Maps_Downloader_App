@@ -8,7 +8,7 @@ data class Region(
     var isDownloadable: Boolean = true,
     var hasRegions: Boolean = false,
     var regions: List<Region>? = null
-): Serializable {
+) : Serializable {
 
     var country: String? = _country
         get() {
