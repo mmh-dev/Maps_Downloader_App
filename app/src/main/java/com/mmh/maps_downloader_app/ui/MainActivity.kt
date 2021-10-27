@@ -1,12 +1,16 @@
 package com.mmh.maps_downloader_app.ui
 
 import android.Manifest
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
+import android.os.Environment
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.work.*
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.listener.multi.BaseMultiplePermissionsListener
@@ -15,18 +19,15 @@ import com.mmh.maps_downloader_app.adapters.HeaderAdapter
 import com.mmh.maps_downloader_app.adapters.MapsAdapter
 import com.mmh.maps_downloader_app.databinding.ActivityMainBinding
 import com.mmh.maps_downloader_app.entity.Region
-import org.xmlpull.v1.XmlPullParser
-import org.xmlpull.v1.XmlPullParserFactory
+import com.mmh.maps_downloader_app.services.MyWorkManager
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
-import java.lang.Exception
+import java.io.InputStream
 import java.net.HttpURLConnection
+import java.net.MalformedURLException
 import java.net.URL
 import java.util.*
-import android.os.Environment
-import java.io.FileOutputStream
-import java.io.InputStream
-import java.net.MalformedURLException
 
 
 class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
@@ -34,6 +35,8 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
     private val headerAdapter = HeaderAdapter()
     private var mapAdapter = MapsAdapter(this)
     private lateinit var binding: ActivityMainBinding
+    private var countriesLiveData: MutableLiveData<MutableList<Region>>? = null
+    private var countries = mutableListOf<Region>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,53 +49,31 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
         }
 
         setProgressBar()
-        fillRecyclerView(parseMapsData())
-
+        fillRecyclerView()
     }
 
-    private fun fillRecyclerView(countries: List<Region>) {
-        val concatAdapter = ConcatAdapter(headerAdapter, mapAdapter)
-        binding.apply {
-            recyclerView.apply {
-                adapter = concatAdapter
-                layoutManager = LinearLayoutManager(this@MainActivity)
-            }
-        }
-        mapAdapter.submitList(countries)
-
-    }
-
-    private fun parseMapsData(): List<Region> {
-        var countries = mutableListOf<Region>()
-        var regions = mutableListOf<Region>()
-        try {
-            val xmlData = assets.open("regions.xml")
-            val parser = XmlPullParserFactory.newInstance().newPullParser()
-            parser.setInput(xmlData, null)
-
-            while (parser.eventType != XmlPullParser.END_DOCUMENT) {
-                if (parser.eventType == XmlPullParser.START_TAG && parser.name == "region") {
-                    var attCount = parser.attributeCount
-                    for (i in 0 until attCount) {
-                        if (parser.getAttributeName(i) == "lang") {   //находим страну
-                            for (j in 0 until attCount) {
-                                if (parser.getAttributeName(j) == "name") {
-                                    val country = Region()
-                                    country.country = parser.getAttributeValue(j)
-                                    countries.add(country)
-                                }
-                            }
-
+    private fun fillRecyclerView() {
+        val workManager = WorkManager.getInstance(this)
+        val data = Data.Builder().putString("tag", "parse").build()
+        val parseWorker = OneTimeWorkRequestBuilder<MyWorkManager>().setInputData(data).build()
+        workManager.enqueue(parseWorker)
+        workManager.getWorkInfoByIdLiveData(parseWorker.id)
+            .observe(this, { workInfo ->
+                if (workInfo.state == WorkInfo.State.SUCCEEDED) {
+                    val jsonString = workInfo.outputData.getString("countries")
+                    val type = object : TypeToken<List<Region>?>() {}.type
+                    countries = Gson().fromJson(jsonString, type)
+                    val concatAdapter = ConcatAdapter(headerAdapter, mapAdapter)
+                    binding.apply {
+                        recyclerView.apply {
+                            adapter = concatAdapter
+                            layoutManager = LinearLayoutManager(this@MainActivity)
                         }
                     }
+                    mapAdapter.submitList(countries.sortedBy { it.country })
                 }
-                parser.next()
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-        Log.i("count", countries.size.toString())
-        return countries
+            })
+
     }
 
     private fun setProgressBar() {

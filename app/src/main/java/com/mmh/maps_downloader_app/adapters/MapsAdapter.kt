@@ -41,11 +41,7 @@ class MapsAdapter (var listener: MapClickListener) : ListAdapter<Region, MapsAda
 
         fun bind(region: Region) {
             binding.apply {
-                if (region.hasRegions) {
-                    locationName.text = region.country
-                } else {
-                    locationName.text = region.region
-                }
+                locationName.text = region.country
             }
         }
     }
