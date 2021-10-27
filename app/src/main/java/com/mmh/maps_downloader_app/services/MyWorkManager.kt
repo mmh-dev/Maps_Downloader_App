@@ -16,6 +16,7 @@ class MyWorkManager(context: Context, workerParams: WorkerParameters) :
 
     override fun doWork(): Result {
         val countries = mutableListOf<Region>()
+        val regions = mutableListOf<Region>()
         val tag = inputData.getString("tag")
         if (tag == "parse") {
             try {
@@ -43,11 +44,15 @@ class MyWorkManager(context: Context, workerParams: WorkerParameters) :
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
+                return Result.failure()
             }
             val countriesJson = Gson().toJson(countries)
             val outputData = Data.Builder().putString("countries", countriesJson).build()
             return Result.success(outputData)
+        } else {
+            val regionsJson = Gson().toJson(regions)
+            val outputData = Data.Builder().putString("regions", regionsJson).build()
+            return Result.success(outputData)
         }
-        return Result.failure()
     }
 }

@@ -1,11 +1,11 @@
 package com.mmh.maps_downloader_app.ui
 
 import android.Manifest
+import android.content.Intent
 import android.os.Bundle
 import android.os.Environment
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.work.*
@@ -35,7 +35,6 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
     private val headerAdapter = HeaderAdapter()
     private var mapAdapter = MapsAdapter(this)
     private lateinit var binding: ActivityMainBinding
-    private var countriesLiveData: MutableLiveData<MutableList<Region>>? = null
     private var countries = mutableListOf<Region>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,7 +72,6 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
                     mapAdapter.submitList(countries.sortedBy { it.country })
                 }
             })
-
     }
 
     private fun setProgressBar() {
@@ -139,7 +137,7 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
             }).check()
     }
 
-    override fun onItemClick(position: Int) {
+    override fun onDownloadClick(position: Int) {
         askPermission(
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -147,9 +145,13 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
         ) { granted ->
             if (granted) {
                 try {
-                    val link = mapAdapter.getItem(position).link
-                    val fileName = mapAdapter.getItem(position).country + "_europe_2.obf.zip"
-                    downloadMaps(link, fileName)
+                    if (!mapAdapter.getItem(position).hasRegions) {
+                        val link = mapAdapter.getItem(position).link
+                        val fileName = mapAdapter.getItem(position).country + "_europe_2.obf.zip"
+                        downloadMaps(link, fileName)
+                    } else {
+                        onItemClick(position)
+                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -158,5 +160,14 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
                     .show()
             }
         }
+    }
+
+    override fun onItemClick(position: Int) {
+        val regions: List<Region>? = mapAdapter.getItem(position).regions
+        val regionsJson = Gson().toJson(regions)
+        val intent = Intent(this, RegionsActivity::class.java)
+        intent.putExtra("title", mapAdapter.getItem(position).country)
+        intent.putExtra("regions", regionsJson)
+        startActivity(intent)
     }
 }

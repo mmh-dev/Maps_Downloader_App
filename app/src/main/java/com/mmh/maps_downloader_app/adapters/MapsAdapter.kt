@@ -9,11 +9,14 @@ import androidx.recyclerview.widget.RecyclerView
 import com.mmh.maps_downloader_app.databinding.MapItemBinding
 import com.mmh.maps_downloader_app.entity.Region
 
-class MapsAdapter (var listener: MapClickListener) : ListAdapter<Region, MapsAdapter.MapsViewHolder>(DiffCallBack()) {
+class MapsAdapter(var listener: MapClickListener) :
+    ListAdapter<Region, MapsAdapter.MapsViewHolder>(DiffCallBack()) {
 
     interface MapClickListener {
         fun onItemClick(position: Int)
+        fun onDownloadClick(position: Int)
     }
+
     public override fun getItem(position: Int): Region {
         return super.getItem(position)
     }
@@ -26,7 +29,7 @@ class MapsAdapter (var listener: MapClickListener) : ListAdapter<Region, MapsAda
     }
 
     override fun onBindViewHolder(holder: MapsViewHolder, position: Int) {
-        val currentRegion = getItem(position)
+        val currentRegion = getItem(position + 1)
         holder.bind(currentRegion)
     }
 
@@ -35,6 +38,9 @@ class MapsAdapter (var listener: MapClickListener) : ListAdapter<Region, MapsAda
 
         init {
             binding.downloadBtn.setOnClickListener {
+                listener.onDownloadClick(absoluteAdapterPosition)
+            }
+            binding.bodyLayout.setOnClickListener {
                 listener.onItemClick(absoluteAdapterPosition)
             }
         }
