@@ -7,7 +7,7 @@ data class Region(
     var region: String? = null,
     var isDownloadable: Boolean = true,
     var hasRegions: Boolean = false,
-    var regions: List<Region>? = null
+    var regions: List<Region>? = null,
 ) : Serializable {
 
     var country: String? = _country
