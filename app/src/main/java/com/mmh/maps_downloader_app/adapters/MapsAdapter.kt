@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.mmh.maps_downloader_app.databinding.MapItemBinding
 import com.mmh.maps_downloader_app.entity.Region
 
-class MapsAdapter(var listener: MapClickListener) :
+class MapsAdapter(var listener: MapClickListener, val tag: String) :
     ListAdapter<Region, MapsAdapter.MapsViewHolder>(DiffCallBack()) {
 
     interface MapClickListener {
@@ -25,29 +25,31 @@ class MapsAdapter(var listener: MapClickListener) :
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MapsViewHolder {
 
         val binding = MapItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return MapsViewHolder(binding, listener)
+        return MapsViewHolder(binding, listener, tag)
     }
 
     override fun onBindViewHolder(holder: MapsViewHolder, position: Int) {
-        val currentRegion = getItem(position + 1)
+        val currentRegion = getItem(position)
         holder.bind(currentRegion)
     }
 
-    class MapsViewHolder(private val binding: MapItemBinding, var listener: MapClickListener) :
+    class MapsViewHolder(private val binding: MapItemBinding, var listener: MapClickListener, val tag: String) :
         RecyclerView.ViewHolder(binding.root) {
 
         init {
             binding.downloadBtn.setOnClickListener {
-                listener.onDownloadClick(absoluteAdapterPosition)
+                listener.onDownloadClick(adapterPosition)
             }
+
             binding.bodyLayout.setOnClickListener {
-                listener.onItemClick(absoluteAdapterPosition)
+                if (tag == "main") listener.onItemClick(adapterPosition)
             }
         }
 
         fun bind(region: Region) {
             binding.apply {
-                locationName.text = region.country
+                if (tag == "main") locationName.text = region.country
+                else locationName.text = region.region?.capitalize()
             }
         }
     }

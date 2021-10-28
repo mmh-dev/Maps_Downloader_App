@@ -19,7 +19,6 @@ import com.mmh.maps_downloader_app.adapters.MapsAdapter
 import com.mmh.maps_downloader_app.databinding.ActivityMainBinding
 import com.mmh.maps_downloader_app.entity.Region
 import com.mmh.maps_downloader_app.utils.MyWorkManager
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
@@ -31,7 +30,7 @@ import java.util.*
 class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
 
     private val headerAdapter = HeaderAdapter()
-    private var mapAdapter = MapsAdapter(this)
+    private var mapAdapter = MapsAdapter(this, "main")
     private lateinit var binding: ActivityMainBinding
     private var countries = mutableListOf<Region>()
 
@@ -50,10 +49,9 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
     }
 
     private fun fillRecyclerView() {
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             countries = parseData()
         }
-        countries = parseData()
         val concatAdapter = ConcatAdapter(headerAdapter, mapAdapter)
         binding.apply {
             recyclerView.apply {
@@ -75,62 +73,44 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
             parser.setInput(xmlData, null)
 
             while (parser.eventType != XmlPullParser.END_DOCUMENT) {
-                if (parser.eventType == XmlPullParser.START_TAG) {
-                    if (parser.name == "region" && parser.depth == 3) {  // is a country
-                        if (currentCountry.hasRegions) {
-                            currentCountry.regions = regions
-                            countries.add(currentCountry)
-                            regions = mutableListOf()
-                            currentCountry = Region()
-                            currentRegion = Region()
-                        }
-                        val attCount = parser.attributeCount
-                        for (j in 0 until attCount) {
-                            if (parser.getAttributeName(j) == "name") {
-                                currentCountry.country = parser.getAttributeValue(j)
+                when (parser.eventType) {
+                    XmlPullParser.START_TAG -> {
+                        when {
+                            parser.name == "region" && parser.depth == 3 -> {  // is a country
+                                val attCount = parser.attributeCount
+                                for (j in 0 until attCount) {
+                                    if (parser.getAttributeName(j) == "name") currentCountry.country = parser.getAttributeValue(j)
+                                    if (parser.getAttributeName(j) == "map" && parser.getAttributeValue(j) == "no") currentCountry.isDownloadable = false
+                                }
                             }
-                            if (parser.getAttributeName(j) == "map" && parser.getAttributeValue(
-                                    j
-                                ) == "no"
-                            ) {
-                                currentCountry.isDownloadable = false
-                            }
-                            if (parser.getAttributeName(j) == "join_map_files" || parser.getAttributeName(
-                                    j
-                                ) == "join_road_files"
-                            ) {  // define if country has regions or not
+                            parser.name == "region" && parser.depth > 3 -> {  // is a region
+                                currentRegion.country = currentCountry.country
                                 currentCountry.hasRegions = true
-                            }
-                        }
-                    } else if (parser.name == "region" && parser.depth > 3) {  // is a region
-                        currentRegion.country = currentCountry.country
-                        val attCount = parser.attributeCount
-                        for (j in 0 until attCount) {
-                            if (parser.getAttributeName(j) == "name") {
-                                currentRegion.region = parser.getAttributeValue(j)
-                            }
-                            if (parser.getAttributeName(j) == "map" && parser.getAttributeValue(
-                                    j
-                                ) == "no"
-                            ) {
-                                currentRegion.isDownloadable = false
+                                val attCount = parser.attributeCount
+                                for (j in 0 until attCount) {
+                                    if (parser.getAttributeName(j) == "name") currentRegion.region = parser.getAttributeValue(j)
+                                    if (parser.getAttributeName(j) == "map" && parser.getAttributeValue(j) == "no") currentRegion.isDownloadable = false
+                                }
                             }
                         }
                     }
-                } else if (parser.eventType == XmlPullParser.END_TAG) {
-                    if (parser.name == "region" && parser.depth == 3) {
-                        if (!currentCountry.hasRegions) {
+                    XmlPullParser.END_TAG -> {
+                        if (parser.name == "region" && parser.depth == 3) {
+                            if (currentCountry.hasRegions) {
+                                regions.removeIf { it.country == null }
+                                currentCountry.regions = regions
+                                regions = mutableListOf()
+                            }
                             countries.add(currentCountry)
                             currentCountry = Region()
                             currentRegion = Region()
+                        } else if (parser.name == "region" && parser.depth > 3) {
+                            regions.add(currentRegion)
+                            currentRegion = Region()
                         }
-                    } else if (parser.name == "region" && parser.depth > 3) {
-                        regions.add(currentRegion)
-                        currentRegion = Region()
                     }
                 }
-
-                parser.next()
+                parser.nextTag()
             }
 
         } catch (e: XmlPullParserException) {

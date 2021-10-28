@@ -13,7 +13,7 @@ class RegionsActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
 
     private lateinit var binding: ActivityRegionsBinding
     private var regions = mutableListOf<Region>()
-    private var mapAdapter = MapsAdapter(this)
+    private var mapAdapter = MapsAdapter(this, "second")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
