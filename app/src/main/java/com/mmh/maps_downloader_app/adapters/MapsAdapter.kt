@@ -37,7 +37,7 @@ class MapsAdapter(var listener: MapClickListener, private val tag: String) :
     class MapsViewHolder(
         private val binding: MapItemBinding,
         var listener: MapClickListener,
-        val tag: String
+        private val tag: String
     ) :
         RecyclerView.ViewHolder(binding.root) {
 

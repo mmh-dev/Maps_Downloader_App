@@ -1,8 +1,9 @@
 package com.mmh.maps_downloader_app.utils
 
 import android.content.Context
-import android.os.Environment
-import androidx.work.*
+import androidx.work.Worker
+import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.google.gson.Gson
 import com.mmh.maps_downloader_app.entity.Region
 import java.io.File
@@ -19,20 +20,18 @@ class MyWorkManager(context: Context, workerParams: WorkerParameters) :
     override fun doWork(): Result {
 
         var currentProgress = 0
-
-        val region = Gson().fromJson("tag", Region::class.java)
+        val region = Gson().fromJson(inputData.getString("tag"), Region::class.java)
         setProgressAsync(workDataOf(PROGRESS to currentProgress))
 
         try {
             val url = URL(region.link)
-            var file: File? = null
-            val fileName = region.link.subSequence(58, region.link.length)
+            val fileName = region.link.subSequence(58, region.link.length) as String
             val urlConnection: HttpURLConnection = url.openConnection() as HttpURLConnection
             urlConnection.requestMethod = "GET"
             urlConnection.doOutput = true
             urlConnection.connect()
-            val sdcard = Environment.getExternalStoragePublicDirectory()
-            val file = File(sdcard, fileName)
+
+            val file = File((applicationContext.getExternalFilesDir("")), fileName)
             val fileOutput = FileOutputStream(file)
             val inputStream: InputStream = urlConnection.inputStream
             val totalSize = urlConnection.contentLength
@@ -42,8 +41,10 @@ class MyWorkManager(context: Context, workerParams: WorkerParameters) :
             while (inputStream.read(buffer) > 0) {
                 bufferLength = inputStream.read(buffer)
                 fileOutput.write(buffer, 0, bufferLength);
-//                downloadedSize += bufferLength;
-//                updateProgress(downloadedSize, totalSize);
+                downloadedSize += bufferLength
+                currentProgress = (downloadedSize / totalSize) * 100
+                setProgressAsync(workDataOf(PROGRESS to currentProgress))
+
             }
             fileOutput.close()
         } catch (e: MalformedURLException) {
@@ -52,7 +53,6 @@ class MyWorkManager(context: Context, workerParams: WorkerParameters) :
             e.printStackTrace()
         }
 
-//        val outputData = Data.Builder().putString("progress", currentProgress.toString()).build()
         return Result.success()
     }
 }
