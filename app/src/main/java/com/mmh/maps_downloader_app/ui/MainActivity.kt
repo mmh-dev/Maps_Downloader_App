@@ -3,23 +3,23 @@ package com.mmh.maps_downloader_app.ui
 import android.Manifest
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.work.*
 import com.google.gson.Gson
-import com.karumi.dexter.Dexter
-import com.karumi.dexter.MultiplePermissionsReport
-import com.karumi.dexter.listener.multi.BaseMultiplePermissionsListener
 import com.mmh.maps_downloader_app.R
 import com.mmh.maps_downloader_app.adapters.HeaderAdapter
 import com.mmh.maps_downloader_app.adapters.MapsAdapter
 import com.mmh.maps_downloader_app.databinding.ActivityMainBinding
 import com.mmh.maps_downloader_app.entity.Region
-import com.mmh.maps_downloader_app.utils.MyWorkManager
+import com.mmh.maps_downloader_app.utils.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
 import org.xmlpull.v1.XmlPullParserFactory
@@ -32,7 +32,18 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
     private val headerAdapter = HeaderAdapter()
     private var mapAdapter = MapsAdapter(this, "main")
     private lateinit var binding: ActivityMainBinding
-    private var countries = mutableListOf<Region>()
+    private var countriesLiveData = MutableLiveData<MutableList<Region>>()
+    private var countries: MutableList<Region>? = null
+
+    override fun onStart() {
+        super.onStart()
+        lifecycleScope.launch(Dispatchers.IO) {
+            countries = parseData()
+            withContext(Dispatchers.Main) {
+                countriesLiveData.value = countries
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,9 +60,6 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
     }
 
     private fun fillRecyclerView() {
-        lifecycleScope.launch {
-            countries = parseData()
-        }
         val concatAdapter = ConcatAdapter(headerAdapter, mapAdapter)
         binding.apply {
             recyclerView.apply {
@@ -59,7 +67,9 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
                 layoutManager = LinearLayoutManager(this@MainActivity)
             }
         }
-        mapAdapter.submitList(countries.sortedBy { it.country })
+        countriesLiveData.observe(this) { list ->
+            mapAdapter.submitList(list.sortedBy { it.country })
+        }
     }
 
     private fun parseData(): MutableList<Region> {
@@ -79,8 +89,12 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
                             parser.name == "region" && parser.depth == 3 -> {  // is a country
                                 val attCount = parser.attributeCount
                                 for (j in 0 until attCount) {
-                                    if (parser.getAttributeName(j) == "name") currentCountry.country = parser.getAttributeValue(j)
-                                    if (parser.getAttributeName(j) == "map" && parser.getAttributeValue(j) == "no") currentCountry.isDownloadable = false
+                                    if (parser.getAttributeName(j) == "name") currentCountry.country =
+                                        parser.getAttributeValue(j)
+                                    if (parser.getAttributeName(j) == "map" && parser.getAttributeValue(
+                                            j
+                                        ) == "no"
+                                    ) currentCountry.isDownloadable = false
                                 }
                             }
                             parser.name == "region" && parser.depth > 3 -> {  // is a region
@@ -88,8 +102,12 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
                                 currentCountry.hasRegions = true
                                 val attCount = parser.attributeCount
                                 for (j in 0 until attCount) {
-                                    if (parser.getAttributeName(j) == "name") currentRegion.region = parser.getAttributeValue(j)
-                                    if (parser.getAttributeName(j) == "map" && parser.getAttributeValue(j) == "no") currentRegion.isDownloadable = false
+                                    if (parser.getAttributeName(j) == "name") currentRegion.region =
+                                        parser.getAttributeValue(j)
+                                    if (parser.getAttributeName(j) == "map" && parser.getAttributeValue(
+                                            j
+                                        ) == "no"
+                                    ) currentRegion.isDownloadable = false
                                 }
                             }
                         }
@@ -133,25 +151,6 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
         }
     }
 
-    private fun Double.round(decimals: Int = 2): Double =
-        "%.${decimals}f".format(Locale.US, this).toDouble()
-
-    private fun updateProgress(downloadedSize: Int, totalSize: Int) {
-
-        Toast.makeText(this, downloadedSize.toString(), Toast.LENGTH_SHORT).show()
-
-    }
-
-    private fun askPermission(vararg permissions: String, callback: (Boolean) -> Unit) {
-        Dexter.withContext(this)
-            .withPermissions(*permissions)
-            .withListener(object : BaseMultiplePermissionsListener() {
-                override fun onPermissionsChecked(p0: MultiplePermissionsReport) {
-                    callback(p0.areAllPermissionsGranted())
-                }
-            }).check()
-    }
-
     override fun onDownloadClick(position: Int) {
         askPermission(
             Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -164,9 +163,20 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
                         val workManager = WorkManager.getInstance(this)
                         val jsonMap = Gson().toJson(mapAdapter.getItem(position))
                         val data = Data.Builder().putString("tag", jsonMap).build()
-                        val parseWorker =
-                            OneTimeWorkRequestBuilder<MyWorkManager>().setInputData(data).build()
-                        workManager.enqueue(parseWorker)
+                        val downloadWorker = OneTimeWorkRequestBuilder<MyWorkManager>()
+                            .setInputData(data)
+                            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED)
+                                    .setRequiresStorageNotLow(true).build()).build()
+                        workManager.enqueueUniqueWork("download", ExistingWorkPolicy.APPEND_OR_REPLACE, downloadWorker)
+
+                        workManager.getWorkInfoByIdLiveData(downloadWorker.id).observe(this, Observer{
+                            if (it.state == WorkInfo.State.RUNNING){
+                                mapAdapter.getItem(position).progress = it.progress.getInt(PROGRESS, 0)
+                            }
+                            else if (it.state == WorkInfo.State.SUCCEEDED){
+                                binding.root.showSnackBar(mapAdapter.getItem(position).country + " map is downloaded!")
+                            }
+                        })
                     } else {
                         onItemClick(position)
                     }
@@ -174,8 +184,7 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
                     e.printStackTrace()
                 }
             } else {
-                Toast.makeText(this, getString(R.string.permissions_required), Toast.LENGTH_SHORT)
-                    .show()
+                binding.root.showSnackBar(getString(R.string.permissions_required))
             }
         }
     }
@@ -189,6 +198,5 @@ class MainActivity : AppCompatActivity(), MapsAdapter.MapClickListener {
             intent.putExtra("regions", regionsJson)
             startActivity(intent)
         }
-
     }
 }

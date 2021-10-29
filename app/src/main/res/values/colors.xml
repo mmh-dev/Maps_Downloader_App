@@ -11,4 +11,6 @@
     <color name="orange">#FF8800</color>
     <color name="grey">#EAEAEA</color>
     <color name="textColor">#212121</color>
+    <color name="progressColor">#2175F3</color>
+    <color name="progressBackgroundColor">#F0F0F0</color>
 </resources>

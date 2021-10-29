@@ -35,6 +35,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <ImageView
@@ -50,8 +51,26 @@
     <ImageView
         android:id="@+id/divider"
         android:layout_width="0dp"
+        android:visibility="visible"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:srcCompat="@drawable/ic_divider" />
+
+    <ProgressBar
+        android:id="@+id/downloadBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="64dp"
+        android:visibility="gone"
+        android:progressBackgroundTint="@color/progressBackgroundColor"
+        android:progressTint="@color/progressColor"
+        app:indicatorDirectionLinear="leftToRight"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:showAnimationBehavior="inward"
+        app:trackThickness="3dp"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
